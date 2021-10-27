@@ -5,9 +5,7 @@ This application is made in Django and is very similar to Instagram.
 ## Features 
 1. Post your favourite pictures or videos.
 2. You can comment and like the post. And even reply to comment.
-3. Users can create their new accounts and if they have their existed 
-
-account then, they can login to their account.
+3. Users can create their new accounts and if they have their existed account then, they can login to their account.
 4. Users can follow other users to see their posts.
 5. If the users want to edit their profile they can also do that.
 6. Users can upload their profile pictures and have to set their username 
@@ -62,8 +60,6 @@ If you have any suggestions for improving this site, so make changes and
 
 if that is good then, I will merge that changes.
 
-* This site is my first web application and it took many days in building 
-
-this.
+* This site is my first web application and it took many days in building this.
 
 Thanks for reading till here :)
