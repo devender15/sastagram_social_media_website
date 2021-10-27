@@ -1,0 +1,19 @@
+*{
+	padding: 0;
+	margin: 0;
+}
+
+
+.main-container{
+	border: 1px solid grey;
+}
+
+.image-container img{
+	height: 110px;
+	width: 111px;
+	border-radius: 56px;
+}
+
+#profile_pic{
+	width: 25px;
+}
