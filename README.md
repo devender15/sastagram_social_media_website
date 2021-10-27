@@ -56,9 +56,7 @@ and go to url = 127.0.0.1:8000/ or click that blue text [localhost]
 create another account and have fun.
 
 ## Final Words
-If you have any suggestions for improving this site, so make changes and 
-
-if that is good then, I will merge that changes.
+If you have any suggestions for improving this site, so make changes and if that is good then, I will merge that changes.
 
 * This site is my first web application and it took many days in building this.
 
