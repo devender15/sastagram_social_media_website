@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% block title %} Sastagram {% endblock %}
+{% block notifications %}Notifications{% endblock %} 
+
+{% load static %}
+{% load humanize %}
+{% block body %}
+{% load dictio %}
+{% load convert_dict %}
+{% load get_index %}
+{% load get_last %}
+{% load typess %}
+{% load convert_list %}
+
+
+<div class="container">
+    {% for post in all_posts reversed %} {# displaying new post on top #}
+    {% for person in user.following|to_dict %}
+    {% if post.username == person %}
+    {% if post.pub_date|naturalday == 'today' %} {# displaying latest posts only #}
+    <div class="post-container">
+        <div class="header1" style="display:flex;">
+            <img style="height: 50px;width: 53px;border-radius: 40px;margin: 10px;" src="/media/{{user_model|get_val:post.username}}">
+            <a style="margin-left: 19px;margin-top:22px;text-decoration:none;color:black;" href="/main/{{post.username}}"><b>{{post.username}}</b></a>
+            
+            <button type="button" class="post-btn" style="height:39px;position:absolute;right:620px;" data-bs-toggle="modal" data-bs-target="#options-list">
+                More</button>
+            
+            <div class="modal fade more-options-container" id="options-list" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content my-5">
+                        <ul class="list-group">
+                            <li class="list-group-item py-3 text-center"><a style="color:red;text-decoration:none;" href="">Report</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:red;text-decoration:none;" href=""> Unfollow</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:black;text-decoration:none;" href=""> Go to Post</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:black;text-decoration:none;" href=""> Share To</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:black;text-decoration:none;" href=""> Cancel</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="image my-2" style="height:400px;">
+            {# checking if the post is image or a video #}
+            {% if post.image|slice_last == 'jpeg' or post.image|slice_last == 'jpg' or post.image|slice_last == 'png' %}
+            <img style="height:100%; width:100%;" src="/media/{{post.image}}">
+            {% elif post.image|slice_last == 'mp4' or post.image|slice_last == 'mkv' or post.image|slice_last == 'avi' or post.image|slice_last == 'wmv' %}
+            <video style="height:100%; width:100%;" controls>
+                <source src="/media/{{post.image}}" type="video/mp4">
+            </video>
+            {% else %}
+            <p>We don't support this type of posts</p>
+            {% endif %}
+        </div>
+        <div class="btn-group" role="group" aria-label="Basic example">
+            <form method="post" action="/home/" id="like-submission">{% csrf_token %}
+                {% ifequal username|get_val:post.sno True %}
+                <button type="submit" class="btn btn-primary like-btn mx-1" id="btn{{post.sno}}">Unlike</button>
+                {% else %}
+                <button type="submit" class="btn btn-primary like-btn mx-1" id="btn{{post.sno}}">Like</button>
+                {% endifequal %}
+                <label class="btn btn-primary" for="comment{{post.sno}}">Comment</label>
+                <button type="button" class="btn btn-primary mx-1">Share</button>
+        </div>
+        <div class="likes-count my-2">
+            <b class="mx-1 like-class" id="like{{post.sno}}">{{post.likes}}</b><b>likes</b>
+            <input type="hidden" name="likes" id="like-handler{{post.sno}}">
+            <input type="hidden" name="postid" id="postid" value="{{post.sno}}">
+            <input type="hidden" name="loggeduser" value="{{user}}">
+            </form>
+        </div>
+        <div class="caption my-3 mx-1">
+            <a style="text-decoration:none;" href="/main/{{post.username}}"><b style="color:black;">{{post.username}}</b></a>
+            <p class="mx-2">{{post.caption}}</p>
+        </div>
+        {% if post.comments|length == 0 %}
+        <p style="font-size:20px;font-weight:bolder;" class="mx-2">Comment box is empty !</p>
+        {% else %}
+        <div class="comments">
+            <p>
+                <a class="mx-2" style="color:grey;text-decoration:none;" data-bs-toggle="collapse" data-bs-target="#all-comments{{post.sno}}" role="button" aria-expanded="false" aria-controls="all-comments{{post.sno}}">
+                    View all {{post.comments|to_dict|length}} comments
+                </a>
+            </p>
+            {% for comment in post.comments|to_dict %}
+            <div class="collapse" id="all-comments{{post.sno}}">
+                {% for name in all_names %}
+                {% if name in comment %}
+                <div class="col-md-11 mx-2 " style="display:flex;"><a class="my-2" href="/main/{{name}}" style="color:black;text-decoration:none;"><b style="font-size:15px;">{{name}}</a></b>
+                    {% endif %}
+                    {% endfor %}
+                    {# doing this cuz we have another dictionary value #}
+                    {% for actual_comment in post.comments|to_dict|get_val:comment %}
+                    <div class="mx-1 my-2">{{actual_comment}}
+                        <div class="reply-container">
+                            {% for username,rep_id in ids.items %}
+                            {% for rep,id in rep_id.items %}
+                            {% ifequal id post.comments|to_dict|get_val:comment|get_val:actual_comment%}
+                            {% for correct_name in all_names %}
+                            {% if correct_name in username %}
+                            <div class="reply-line" style="display: flex;">
+                                <a href="/main/{{correct_name}}" style="color:black;text-decoration:none;"><b>{{correct_name}}</b></a>
+                                <p class="mx-1">{{rep}}</p>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                            {% endifequal %}
+                            {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {# making reply functionality #}
+                    <div class="more-options">
+                        <button class="btn btn-primary btm-sm" type="button" data-bs-toggle="collapse" data-bs-target="#replyBox{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}" aria-expanded="false" aria-controls="replyBox{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}">Reply</button>
+                    </div>
+                    <div class="collapse" id="replyBox{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}">
+                        <div class="card card-body">
+                            <form action="/home/postComment/" method="post"> {% csrf_token %}
+                                <div class="mb-3">
+                                    <input type="text" name="comment" class="form-control" id="comment" placeholder="Reply to this comment" required>
+                                    <input type="hidden" name="parentSno" value="{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}">
+                                </div>
+                                <input type="hidden" name="postid" value="{{post.sno}}">
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            <p class="mx-2" style="color:grey;margin-top:7px;">{{post.pub_date | naturaltime}} </p>
+            <form action="/home/postComment/" method="post">{% csrf_token %}
+                <div class="comment-container">
+                    <button type="button" class="btn btn-secondary popover_class mx-1" id="popover{{post.sno}}" data-bs-container="body" data-toggle="popover" data-bs-placement="top">
+                        Emoji
+                    </button>
+                    <input class="comment-box" id="comment{{post.sno}}" type="text" name="comment" placeholder="Add a comment...">
+                    <input type="hidden" name="parentSno" value="">
+                    <input type="hidden" name="postid" id="postid" value="{{post.sno}}">
+                    <button type="submit" class="post-btn">Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+
+    <div class="post-container">
+        <div class="header1" style="display:flex;">
+            <img style="height: 50px;width: 53px;border-radius: 40px;margin: 10px;" src="/media/{{user_model|get_val:post.username}}">
+            <a style="margin-left: 19px;margin-top:22px;text-decoration:none;color:black;" href="/main/{{post.username}}"><b>{{post.username}}</b></a>
+            
+            <button type="button" class="post-btn" style="height:39px;position:absolute;right:620px;" data-bs-toggle="modal" data-bs-target="#options-list">
+                More</button>
+            
+            <div class="modal fade" id="options-list" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content my-5">
+                        <ul class="list-group">
+                            <li class="list-group-item py-3 text-center"><a style="color:red;text-decoration:none;" href="">Report</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:red;text-decoration:none;" href=""> Unfollow</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:black;text-decoration:none;" href=""> Go to Post</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:black;text-decoration:none;" href=""> Share To</a></li>
+                            <li class="list-group-item py-3 text-center"><a style="color:black;text-decoration:none;" href=""> Cancel</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="image my-2" style="height:400px;">
+            {# checking if the post is image or a video #}
+            {% if post.image|slice_last == 'jpeg' or post.image|slice_last == 'jpg' or post.image|slice_last == 'png' %}
+            <img style="height:100%; width:100%;" src="/media/{{post.image}}">
+            {% elif post.image|slice_last == 'mp4' or post.image|slice_last == 'mkv' or post.image|slice_last == 'avi' or post.image|slice_last == 'wmv' %}
+            <video style="height:100%; width:100%;" controls>
+                <source src="/media/{{post.image}}" type="video/mp4">
+            </video>
+            {% else %}
+            <p>We don't support this type of posts</p>
+            {% endif %}
+        </div>
+        <div class="btn-group" role="group" aria-label="Basic example">
+            <form method="post" action="/home/" id="like-submission">{% csrf_token %}
+                {% ifequal username|get_val:post.sno True %}
+                <button type="submit" class="btn btn-primary like-btn mx-1" id="btn{{post.sno}}">Unlike</button>
+                {% else %}
+                <button type="submit" class="btn btn-primary like-btn mx-1" id="btn{{post.sno}}">Like</button>
+                {% endifequal %}
+                <label class="btn btn-primary" for="comment{{post.sno}}">Comment</label>
+                <button type="button" class="btn btn-primary mx-1">Share</button>
+        </div>
+        <div class="likes-count my-2">
+            <b class="mx-1 like-class" id="like{{post.sno}}">{{post.likes}}</b><b>likes</b>
+            <input type="hidden" name="likes" id="like-handler{{post.sno}}">
+            <input type="hidden" name="postid" id="postid" value="{{post.sno}}">
+            <input type="hidden" name="loggeduser" value="{{user}}">
+            </form>
+        </div>
+        <div class="caption my-3 mx-1">
+            <a style="text-decoration:none;" href="/main/{{post.username}}"><b style="color:black;">{{post.username}}</b></a>
+            <p class="mx-2">{{post.caption}}</p>
+        </div>
+        {% if post.comments|length == 0 %}
+        <p style="font-size:20px;font-weight:bolder;" class="mx-2">Comment box is empty !</p>
+        {% else %}
+        <div class="comments">
+            <p>
+                <a class="mx-2" style="color:grey;text-decoration:none;" data-bs-toggle="collapse" data-bs-target="#all-comments{{post.sno}}" role="button" aria-expanded="false" aria-controls="all-comments{{post.sno}}">
+                    View all {{post.comments|to_dict|length}} comments
+                </a>
+            </p>
+            {% for comment in post.comments|to_dict %}
+            <div class="collapse" id="all-comments{{post.sno}}">
+                {% for name in all_names %}
+                {% if name in comment %}
+                <div class="col-md-11 mx-2 " style="display:flex;"><a class="my-2" href="/main/{{name}}" style="color:black;text-decoration:none;"><b style="font-size:15px;">{{name}}</a></b>
+                    {% endif %}
+                    {% endfor %}
+                    {# doing this cuz we have another dictionary value #}
+                    {% for actual_comment in post.comments|to_dict|get_val:comment %}
+                    <div class="mx-1 my-2">{{actual_comment}}
+                        <div class="reply-container">
+                            {% for username,rep_id in ids.items %}
+                            {% for rep,id in rep_id.items %}
+                            {% ifequal id post.comments|to_dict|get_val:comment|get_val:actual_comment%}
+                            {% for correct_name in all_names %}
+                            {% if correct_name in username %}
+                            <div class="reply-line" style="display: flex;">
+                                <a href="/main/{{correct_name}}" style="color:black;text-decoration:none;"><b>{{correct_name}}</b></a>
+                                <p class="mx-1">{{rep}}</p>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                            {% endifequal %}
+                            {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {# making reply functionality #}
+                    <div class="more-options">
+                        <button class="btn btn-primary btm-sm" type="button" data-bs-toggle="collapse" data-bs-target="#replyBox{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}" aria-expanded="false" aria-controls="replyBox{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}">Reply</button>
+                    </div>
+                    <div class="collapse" id="replyBox{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}">
+                        <div class="card card-body">
+                            <form action="/home/postComment/" method="post"> {% csrf_token %}
+                                <div class="mb-3">
+                                    <input type="text" name="comment" class="form-control" id="comment" placeholder="Reply to this comment" required>
+                                    <input type="hidden" name="parentSno" value="{{post.comments|to_dict|get_val:comment|get_val:actual_comment}}">
+                                </div>
+                                <input type="hidden" name="postid" value="{{post.sno}}">
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+            <p class="mx-2" style="color:grey;margin-top:7px;">{{post.pub_date | naturaltime}} </p>
+            <form action="/home/postComment/" method="post">{% csrf_token %}
+                <div class="comment-container">
+                    <button type="button" class="btn btn-secondary popover_class mx-1" id="popover{{post.sno}}" data-bs-container="body" data-toggle="popover" data-bs-placement="top">
+                        Emoji
+                    </button>
+                    <input class="comment-box" id="comment{{post.sno}}" type="text" name="comment" placeholder="Add a comment...">
+                    <input type="hidden" name="parentSno" value="">
+                    <input type="hidden" name="postid" id="postid" value="{{post.sno}}">
+                    <button type="submit" class="post-btn">Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
+</div>
+</a>
+</div>
+</div>
+</div>
+</form>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+$(".like-btn").on('click', function(e) {
+
+    let id = this.id.toString();
+    id = id.slice(3, );
+
+    let btn = document.querySelector("#btn" + id);
+
+    if (btn.innerHTML == "Unlike") {
+        like_decrement(id);
+        btn.innerHTML = "Like";
+    } else if (btn.innerHTML == "Like") {
+        like_increment(id);
+        btn.innerHTML = "Unlike";
+    }
+})
+
+
+function like_increment(id) {
+    likes = document.querySelector("#like" + id);
+    likes.innerHTML = Number(likes.innerHTML) + 1;
+
+    hidden_field = document.querySelector("#like-handler" + id);
+    hidden_field.value = likes.innerHTML;
+}
+
+function like_decrement(id) {
+    likes = document.querySelector("#like" + id);
+    likes.innerHTML = Number(likes.innerHTML) - 1;
+
+    hidden_field = document.querySelector("#like-handler" + id);
+    hidden_field.value = likes.innerHTML;
+}
+
+// $('.popover_class').popover('show');
+
+// $(document).ready(function(){
+//   $('[data-toggle="popover"]').popover();
+
+//     document.querySelector(".popover_class").setAttribute('data-content', "hello");
+// });
+
+$(".popover_class").on("click", function(e) {
+    let id = this.id.toString();
+    // console.log(id);
+
+    let path = "{% static 'img/emojis/eyes_star.png' %}";
+
+    let str = "";
+    str += `<div><h3>Popular emojis</h3></div><div><img src='${path}' alt=''></div>`;
+
+    // document.getElementsByClassName("popover_class").setAttribute('data-bs-content', str);
+    $('.popover_class').popover('show');
+})
+</script>
+{% endblock %}

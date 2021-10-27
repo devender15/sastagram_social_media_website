@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Search results for query{% endblock %}
+
+{% load static %}
+{% block body %}
+{% load get_last %}
+
+
+<div class="text-center my-4">
+	<h1>Search Results for "<i>{{query}}</i>"  are :</h1>
+</div>
+
+
+<div class="results">
+
+	{% if users|length == 0 %}
+	<div class="my-5">
+		<p class="h1"><i><b>No results found !</b></i></p>
+	</div>
+
+	{% else %}
+	{% for user in users %}
+	<div class="card">
+		<img src="/media/{{user.profile_pic}}" alt="user-image">
+		<p class="user">{{user.username}}</p>
+		<p class="bio">{{user.bio|truncatechars:20}}</p>
+		<a href="/main/{{user.username}}" class="btn btn-primary visit-btn"><b>Visit Profile</b></a>
+	</div>
+	{% endfor %}
+	{% endif %}
+
+</div>
+{% endblock %}

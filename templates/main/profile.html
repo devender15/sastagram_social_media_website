@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}{{profile.fname}} (@{{profile.username}}) | Sastagram photos and videos{% endblock %}
+
+{% load static %}
+{% block body %}
+{% load dictio %}
+{% load convert_dict %}
+{% load get_index %}
+{% load get_last %}
+{% load typess %}
+{% load convert_list %}
+{% load humanize %}
+
+
+<div class="container header">
+	<div class="row">
+		<div class="col-md-3 img-box">
+			<img src="/media/{{profile.profile_pic}}" alt="user image">
+		</div>
+
+		<div class="col-md-9 info-box my-2">
+
+			<div class="top-gear">
+				<h2>{{profile.username}}</h2>
+
+				{% ifequal profile.email|lower user|lower %}
+				<a type="button" class="my-1 btn btn-primary" style="height:40px;margin-left:40px;font-weight:bold;" href="edit/">Edit Profile</a>
+
+				{% else %}
+				<form action="follow/" method="post">{% csrf_token %}
+					{% if profile.username in user.following|to_list %}
+					<button type="submit" class="my-1 btn btn-primary" style="height:40px;margin-left:40px;font-weight:bold;">Unfollow</button>
+
+					{% else %}
+					<button type="submit" class="my-1 btn btn-primary" style="height:40px;margin-left:40px;font-weight:bold;">Follow</button>
+					{% endif %}
+					<input type="hidden" name="user-name" value="{{profile.username}}">
+				</form>
+
+				{% endifequal %}
+			</div>
+
+			
+
+			<div class="stats my-3">
+				<p style="font-size:20px;"><b>{{post.count}}</b> posts</p>
+			{% with followers=profile.followers|to_list %}
+				<p class="mx-3" style="font-size:20px;"><b>{{followers|length}}</b> followers</p>{% endwith %}
+				<p class="mx-2" style="font-size:20px;"><b>{% with following=profile.following|to_dict %}{{following|length}}{% endwith %}</b> following</p>
+			</div>
+
+			<div class="full-name">
+				<p><b>{{profile.fname}}</p></b>
+			</div>
+
+			<div class="bio">
+				<p>{{profile.bio}}</p>
+			</div>
+
+		</div>
+	</div>
+</div>
+
+<hr>
+
+
+
+<div class="posts grid-container container">
+	
+	{% for profile in post %}
+
+		<div class="post-card my-2">
+
+            {% if profile.image|slice_last == 'jpeg' or profile.image|slice_last == 'jpg' or profile.image|slice_last == 'png' %}
+            <img data-bs-toggle="modal" data-bs-target="#view_post{{profile.sno}}"  style="height:100%; width:100%;" src="/media/{{profile.image}}">
+
+
+			<div class="modal fade view_post-container" id="view_post{{profile.sno}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+			  aria-hidden="true">
+			  <div class="modal-dialog cascading-modal" role="document">
+
+			    <!--Content-->
+			    <div class="modal-content">
+
+
+			      <!--Body-->
+			      <div class="modal-body mb-0 text-center">
+
+			      	<div class="image-side">
+			      		<img src="/media/{{profile.image}}" alt="user-post">
+			      	</div>
+
+			      	<div class="info-side">
+			      		<div class="info-header">
+			      			<a style="font-weight:bolder;color:black;text-decoration:none;" href="/main/{{profile.username}}">{{profile.username}}</a>	
+			      		</div>
+
+			      		<div class="rest-info">
+			      			<div class="caption-div text-center">
+			      				<p><i>{{profile.caption}}</i></p>
+			      				<hr>
+			      			</div>
+
+			      			<div class="comments-main-container comments-main-container2">
+			      				{% if profile.comments|length == 0 %}
+			      				<p><b>Comment box is empty !</b></p>
+
+			      				{% else %}
+
+			      				{% with comm_dict=profile.comments|to_dict %}
+			      				{% for user,comment in comm_dict.items %}
+			      				<div class="my-2">
+			      					{% for name in all_users %}
+			      					{% if name in user %}
+			      					<div style="display:flex;height:16px;">
+					      				<a href="/main/{{name}}" style="color:black;font-weight:bold;text-decoration:none;">{{name}}</a>
+
+					      				{% endif %}
+					      				{% endfor %}
+					      				{% for actual_comm,id in comment.items%}
+					      				<p class="mx-1" style="width:100%;">{{actual_comm}}</p>
+				      				</div>
+				      				<div class="reply-btn">
+				      					<a type="button" data-bs-toggle="collapse" data-bs-target="#replyBox{{id}}" aria-expanded="false" aria-controls="replyBox{{id}}">Reply</a>
+				      				</div>
+
+  				                    <div class="collapse" id="replyBox{{id}}">
+				                        <div class="card card-body">
+				                            <form action="/home/postComment/" method="post"> {% csrf_token %}
+				                                <div class="mb-3">
+				                                    <input type="text" name="comment" class="form-control" id="comment" placeholder="Reply" required>
+				                                    <input type="hidden" name="parentSno" value="{{id}}">
+				                                </div>
+				                                <input type="hidden" name="postid" value="{{profile.sno}}">
+				                                <button type="submit" class="btn btn-primary">Submit</button>
+				                            </form>
+				                        </div>
+			                    </div>
+
+
+									{# iterating all replies #}  
+				      				<div class="reply-container-profile">
+				      				{% for user,rep_dict in ids.items %}
+				      				{% for reply,rep_id in rep_dict.items %}
+				      				{% ifequal rep_id id %}
+				      				{% for name in all_users %}
+				      				{% if name in user %}
+				      				<div style="display:flex;">
+				      					<a href="/main/{{name}}" style="color: black;text-decoration:none;font-weight: bold;">{{name}}</a>&nbsp;{{reply}}
+				      				</div>
+				      				{% endif %}
+				      				{% endfor %}
+				      				{% endifequal %}
+				      				{% endfor %}
+				      				{% endfor %}
+				      				</div>
+
+
+
+				      				{% endfor %}
+			      				</div>
+
+			      				{% endfor %}
+			      				{% endwith %}
+
+			      				{% endif %}
+			      			</div>
+
+			      		</div>
+
+				      	<div class="comment-input-field">
+				      		
+	      		            <form action="/home/postComment/" method="post">{% csrf_token %}
+					            <div class="comment-container">
+					                <button type="button" class="btn btn-secondary popover_class mx-1" id="popover{{profle.sno}}" data-bs-container="body" data-toggle="popover" data-bs-placement="top">
+					                    Emoji
+					                </button>
+					                <input class="comment-box2 " id="comment{{profile.sno}}" type="text" name="comment" placeholder="Add a comment...">
+					                <input type="hidden" name="parentSno" value="">
+					                <input type="hidden" name="postid" id="postid" value="{{profile.sno}}">
+					                <button type="submit" class="post-btn">Post</button>
+					            </div>
+					        </form>
+
+				      	</div>
+
+			      	</div>
+
+			      </div>
+
+			    </div>
+
+			  </div>
+			</div>
+
+
+            {% elif profile.image|slice_last == 'mp4' or profile.image|slice_last == 'mkv' or profile.image|slice_last == 'avi' or profile.image|slice_last == 'wmv' %}
+            <video data-bs-toggle="modal" data-bs-target="#view_post" style="height:100%; width:100%;"  controls>
+                <source src="/media/{{profile.image}}" type="video/mp4">
+            </video>
+
+            {% endif %}
+
+		</div>	
+
+	{% endfor %}
+</div>
+
+
+{% endblock %}
